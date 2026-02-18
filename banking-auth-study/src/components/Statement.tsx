@@ -18,7 +18,7 @@ export default function Statement({ onBack }: Props) {
         <div style={styles.statementHeader}>
           <div>
             <h3>Student Bank</h3>
-            <p>123 University Ave, Glasgow</p>
+            <p>Glasgow</p>
           </div>
           <div style={{textAlign: 'right'}}>
             <h3>Luke Holmes</h3>
@@ -42,28 +42,28 @@ export default function Statement({ onBack }: Props) {
           <tbody>
             <tr>
               <td style={styles.td}>Feb 18</td>
-              <td style={styles.td}>Direct Debit: Spotify</td>
+              <td style={styles.td}>Spotify</td>
               <td style={styles.td}>£9.99</td>
               <td style={styles.td}>-</td>
               <td style={styles.td}>£12,450.00</td>
             </tr>
             <tr>
               <td style={styles.td}>Feb 17</td>
-              <td style={styles.td}>Tesco Extra</td>
+              <td style={styles.td}>Shop</td>
               <td style={styles.td}>£32.10</td>
               <td style={styles.td}>-</td>
               <td style={styles.td}>£12,459.99</td>
             </tr>
             <tr>
               <td style={styles.td}>Feb 15</td>
-              <td style={styles.td}>Transfer from Mum</td>
+              <td style={styles.td}>Transfer</td>
               <td style={styles.td}>-</td>
               <td style={styles.td}>£50.00</td>
               <td style={styles.td}>£12,492.09</td>
             </tr>
              <tr>
               <td style={styles.td}>Feb 14</td>
-              <td style={styles.td}>Starbucks Coffee</td>
+              <td style={styles.td}>Coffee</td>
               <td style={styles.td}>£4.50</td>
               <td style={styles.td}>-</td>
               <td style={styles.td}>£12,442.09</td>

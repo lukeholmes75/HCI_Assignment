@@ -104,7 +104,7 @@ export default function Dashboard({ onStartTask }: Props) {
           <tbody>
             <tr>
               <td style={styles.td}>Today</td>
-              <td style={styles.td}>Starbucks Coffee</td>
+              <td style={styles.td}>Coffee</td>
               <td style={styles.td}>Food & Drink</td>
               <td style={{...styles.td, textAlign: 'right', fontWeight: 'bold'}}>-£4.50</td>
             </tr>

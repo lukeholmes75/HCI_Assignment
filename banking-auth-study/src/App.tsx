@@ -4,56 +4,68 @@ import Dashboard from './components/Dashboard';
 import AuthGauntlet from './components/AuthGauntlet';
 import Statement from './components/Statement';
 import Transfer from './components/Transfer';
+import UpdateAddress from './components/UpdateAddress'; // <--- NEW IMPORT
 import SuccessView from './components/SuccessView';
 
 function App() {
   // 1. STATE MANAGEMENT
-  // Tracks which screen is currently visible
-  const [view, setView] = useState<'login' | 'dash' | 'statement' | 'transfer' | 'success'>('login');
+  // Tracks which screen is visible. Added 'address' to the list.
+  const [view, setView] = useState<'login' | 'dash' | 'statement' | 'transfer' | 'address' | 'success'>('login');
   
-  // Tracks if the Security Pop-up is open
   const [showModal, setShowModal] = useState(false);
   
-  // Tracks data for the current experiment task
+  // Study Data State
   const [level, setLevel] = useState(1);
   const [taskName, setTaskName] = useState('');
   const [lastResult, setLastResult] = useState({ timeTaken: 0, errors: 0 });
 
   // 2. HANDLERS
 
-  // Login -> Dashboard
   const handleAppLogin = () => {
     setView('dash');
   };
 
-  // Dashboard Button Click -> Open Security Modal
   const startTask = (lvl: number, name: string) => {
     setLevel(lvl);
     setTaskName(name);
-    setShowModal(true); // Open the pop-up
+    setShowModal(true);
   };
 
-  // Security Modal Complete -> Route to the correct page
+  // ROUTING LOGIC: Decides where to go after the Security Check
   const finishTask = (data: { timeTaken: number; errors: number }) => {
-    setShowModal(false); // Close the pop-up
-    setLastResult(data); // Save the timing/error data to show later
+    setShowModal(false); 
+    setLastResult(data); 
 
-    // ROUTING LOGIC: Where do we go after security?
-    if (taskName === "View Statement") {
+    console.log("Task Finished:", taskName);
+
+    // 1. View Statement
+    if (taskName.includes("Statement")) {
       setView('statement');
     } 
-    else if (taskName === "Pay a Friend") {
+    // 2. Transfers (Small OR Large)
+    else if (taskName.includes("Pay") || taskName.includes("Transfer")) {
       setView('transfer');
     }
+    // 3. Update Address (NEW)
+    else if (taskName.includes("Address") || taskName.includes("Update")) {
+      setView('address');
+    }
+    // 4. Fallback (Go straight to success if no page exists)
     else {
-      // For tasks without a specific page (Level 3 & 4), go straight to success receipt
       setView('success');
     }
   };
 
-  // Transfer Page "Confirm" Click -> Show Success Receipt
   const completeSubTask = () => {
     setView('success');
+  };
+
+  // Helper: Decides if transfer is £20 or £10,000 based on the button clicked
+  const getTransferAmount = () => {
+    if (taskName.includes("Large") || taskName.includes("10k")) {
+      return "10,000.00";
+    }
+    return "20.00";
   };
 
   // 3. RENDER
@@ -64,12 +76,11 @@ function App() {
         <Login onLogin={handleAppLogin} />
       )}
       
-      {/* SCREEN 2: DASHBOARD (The Hub) */}
+      {/* SCREEN 2: DASHBOARD */}
       {view === 'dash' && (
         <>
           <Dashboard onStartTask={startTask} />
-          
-          {/* The Security Modal lives here so it overlays the dashboard */}
+          {/* Security Modal overlays the dashboard */}
           {showModal && (
             <AuthGauntlet 
               level={level} 
@@ -81,20 +92,29 @@ function App() {
         </>
       )}
 
-      {/* SCREEN 3: STATEMENTS (Level 1 Reward) */}
+      {/* SCREEN 3: STATEMENT */}
       {view === 'statement' && (
         <Statement onBack={() => setView('dash')} />
       )}
 
-      {/* SCREEN 4: TRANSFER MONEY (Level 2 Reward) */}
+      {/* SCREEN 4: TRANSFER MONEY */}
       {view === 'transfer' && (
         <Transfer 
+          onBack={() => setView('dash')} 
+          onConfirm={completeSubTask} 
+          initialAmount={getTransferAmount()} 
+        />
+      )}
+
+      {/* SCREEN 5: UPDATE ADDRESS */}
+      {view === 'address' && (
+        <UpdateAddress 
           onBack={() => setView('dash')} 
           onConfirm={completeSubTask} 
         />
       )}
 
-      {/* SCREEN 5: SUCCESS RECEIPT (Shows Study Data) */}
+      {/* SCREEN 6: SUCCESS RECEIPT */}
       {view === 'success' && (
         <SuccessView 
           taskName={taskName} 

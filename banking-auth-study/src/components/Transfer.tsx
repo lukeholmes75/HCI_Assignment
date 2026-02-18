@@ -4,26 +4,24 @@ import React from 'react';
 type Props = {
   onBack: () => void;
   onConfirm: () => void;
+  initialAmount?: string; // NEW: Accepts an amount from the parent
 };
 
-export default function Transfer({ onBack, onConfirm }: Props) {
-  // We use "simulated" data so the user doesn't have to type everything out
-  // This keeps your study focused on the SECURITY aspect, not typing speed.
-  const payee = "Alice Smith";
-  const amount = "20.00";
+export default function Transfer({ onBack, onConfirm, initialAmount = "20.00" }: Props) {
+  // Use the prop if provided, otherwise default to 20.00
+  const amount = initialAmount;
+  const payee = amount === "10,000.00" ? "Investment Account" : "Alice Smith";
 
   return (
     <div style={styles.container}>
       <div style={styles.card}>
         
-        {/* HEADER */}
         <header style={styles.header}>
           <button onClick={onBack} style={styles.backBtn}>← Cancel</button>
-          <h2 style={{ margin: 0, fontSize: '1.2rem' }}>Make Payment</h2>
-          <div style={{ width: '60px' }}></div> {/* Spacer to center title */}
+          <h2 style={{ margin: 0, fontSize: '1.2rem' }}>Confirm Payment</h2>
+          <div style={{ width: '60px' }}></div>
         </header>
 
-        {/* FROM ACCOUNT */}
         <div style={styles.accountBox}>
           <span style={styles.label}>From Account</span>
           <div style={styles.accountRow}>
@@ -32,29 +30,26 @@ export default function Transfer({ onBack, onConfirm }: Props) {
           </div>
         </div>
 
-        {/* TO (PAYEE) */}
         <div style={styles.formGroup}>
           <label style={styles.label}>To (Payee)</label>
           <div style={styles.inputFake}>{payee}</div>
         </div>
 
-        {/* AMOUNT */}
+        {/* AMOUNT DISPLAY */}
         <div style={styles.formGroup}>
           <label style={styles.label}>Amount (£)</label>
           <div style={styles.amountDisplay}>£{amount}</div>
         </div>
 
-        {/* REFERENCE */}
         <div style={styles.formGroup}>
           <label style={styles.label}>Reference</label>
-          <div style={styles.inputFake}>Dinner & Drinks</div>
+          <div style={styles.inputFake}>
+            {amount === "10,000.00" ? "Investment" : "Food"}
+          </div>
         </div>
 
-        <div style={styles.warning}>
-          ⚠️ Payments are usually instant and cannot be reversed.
-        </div>
+        
 
-        {/* THE BIG CONFIRM BUTTON */}
         <button onClick={onConfirm} style={styles.confirmBtn}>
           Confirm Transfer
         </button>
@@ -70,7 +65,7 @@ const styles = {
     background: '#f0f2f5',
     display: 'flex',
     justifyContent: 'center',
-    paddingTop: '40px', // Push it down slightly from top
+    paddingTop: '40px',
     fontFamily: 'Segoe UI, sans-serif',
   },
   card: {
