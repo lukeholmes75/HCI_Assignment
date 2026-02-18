@@ -48,9 +48,6 @@ export default function Login({ onLogin }: Props) {
             Log In
           </button>
         </form>
-        <p style={{ marginTop: '20px', fontSize: '0.8rem', color: '#999' }}>
-          Authorized Personnel Only
-        </p>
       </div>
     </div>
   );
@@ -59,12 +56,16 @@ export default function Login({ onLogin }: Props) {
 // Simple CSS-in-JS styles for a clean look
 const containerStyle = {
   display: 'flex',
-  justifyContent: 'center',
-  alignItems: 'center',
-  height: '100vh',
+  justifyContent: 'center',    // Center horizontally
+  alignItems: 'center',        // Center vertically
+  height: '100vh',             // Full Height
+  width: '100vw',              // Full Width (This is the key fix!)
+  position: 'fixed',           // Locks it to the screen viewport
+  top: 0,
+  left: 0,
   backgroundColor: '#f0f2f5',
   fontFamily: 'Arial, sans-serif'
-};
+} as const; // 'as const' makes TypeScript happy with the position value
 
 const cardStyle = {
   background: 'white',
