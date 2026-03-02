@@ -12,20 +12,25 @@
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 
+export type AuthResult = {
+  timeTaken: number;
+  errors: number;
+  stageTimes: { stage: string; seconds: number }[];
+};
+
 type Props = {
-  level: number;       // How many auth stages (1–4)
-  taskName: string;    // Which banking task triggered this
-  onComplete: (data: { timeTaken: number; errors: number }) => void;
+  level: number;
+  taskName: string;
+  userPin: string;
+  userPetName: string;
+  onComplete: (data: AuthResult) => void;
   onCancel: () => void;
 };
 
-// The fixed OTP code for this session (simulates what the "real" SMS would contain)
-const SIMULATED_OTP = '839205';
+// Generate a random 6-digit OTP
+const generateOtp = () => String(Math.floor(100000 + Math.random() * 900000));
 
-// Security question answer
-const SECURITY_ANSWER = 'chester';
-
-export default function AuthGauntlet({ level, taskName, onComplete, onCancel }: Props) {
+export default function AuthGauntlet({ level, taskName, userPin, userPetName, onComplete, onCancel }: Props) {
   // --- CORE STATE ---
   const [stage, setStage] = useState(0);
   const [input, setInput] = useState('');
@@ -33,10 +38,16 @@ export default function AuthGauntlet({ level, taskName, onComplete, onCancel }: 
   const [errors, setErrors] = useState(0);
   const [failMessage, setFailMessage] = useState('');
 
+  // --- PER-STAGE TIMING ---
+  const [stageTimes, setStageTimes] = useState<{ stage: string; seconds: number }[]>([]);
+  const stageStartTime = useRef(Date.now());
+
   // --- OTP STATE ---
   const [otpSent, setOtpSent] = useState(false);
   const [otpCountdown, setOtpCountdown] = useState(0);
   const [showOtpHint, setShowOtpHint] = useState(false);
+  const [currentOtp, setCurrentOtp] = useState('');
+  const otpDismissRef = useRef<number | null>(null);
 
   // --- WEBCAM & BIOMETRIC STATE ---
   const [isScanning, setIsScanning] = useState(false);
@@ -51,8 +62,13 @@ export default function AuthGauntlet({ level, taskName, onComplete, onCancel }: 
   // Refs to avoid stale closures in setTimeout/setInterval callbacks
   const stageRef = useRef(stage);
   const errorsRef = useRef(errors);
+  const stageTimesRef = useRef(stageTimes);
   useEffect(() => { stageRef.current = stage; }, [stage]);
   useEffect(() => { errorsRef.current = errors; }, [errors]);
+  useEffect(() => { stageTimesRef.current = stageTimes; }, [stageTimes]);
+
+  // Factor labels for the timing log
+  const factorLabels = ['PIN', 'OTP', 'Face Scan', 'Security Q'];
 
   // =========================================================
   // STAGE ADVANCEMENT
@@ -63,11 +79,31 @@ export default function AuthGauntlet({ level, taskName, onComplete, onCancel }: 
     stopCamera();
     const currentStage = stageRef.current;
     const currentErrors = errorsRef.current;
+    const currentStageTimes = stageTimesRef.current;
+
+    // Record how long this stage took
+    const now = Date.now();
+    const stageDuration = (now - stageStartTime.current) / 1000;
+    
+    console.log(`[AuthGauntlet] Stage ${currentStage} (${factorLabels[currentStage]}) completed in ${stageDuration.toFixed(2)}s`);
+    console.log(`[AuthGauntlet] stageStartTime was: ${stageStartTime.current}, now: ${now}`);
+    
+    const updatedStageTimes = [
+      ...currentStageTimes,
+      { stage: factorLabels[currentStage] || `Stage ${currentStage}`, seconds: stageDuration },
+    ];
+    setStageTimes(updatedStageTimes);
     
     if (currentStage + 1 >= level) {
-      // All stages complete — report results
-      onComplete({ timeTaken: (Date.now() - startTime) / 1000, errors: currentErrors });
+      // All stages complete — report results with per-stage breakdown
+      console.log('[AuthGauntlet] All stages complete. stageTimes:', updatedStageTimes);
+      onComplete({
+        timeTaken: (now - startTime) / 1000,
+        errors: currentErrors,
+        stageTimes: updatedStageTimes,
+      });
     } else {
+      stageStartTime.current = Date.now(); // Reset timer for next stage
       setStage(currentStage + 1);
       setInput('');
       setFailMessage('');
@@ -91,12 +127,12 @@ export default function AuthGauntlet({ level, taskName, onComplete, onCancel }: 
     e.preventDefault();
     let isValid = false;
 
-    // Stage 0: PIN — "1234"
-    if (stage === 0 && input === '1234') isValid = true;
-    // Stage 1: OTP — the simulated code
-    else if (stage === 1 && input === SIMULATED_OTP) isValid = true;
-    // Stage 3: Security Question — pet's name
-    else if (stage === 3 && input.toLowerCase().trim() === SECURITY_ANSWER) isValid = true;
+    // Stage 0: PIN — user's chosen PIN
+    if (stage === 0 && input === userPin) isValid = true;
+    // Stage 1: OTP — the randomly generated code
+    else if (stage === 1 && input === currentOtp) isValid = true;
+    // Stage 3: Security Question — user's pet name
+    else if (stage === 3 && input.toLowerCase().trim() === userPetName) isValid = true;
 
     if (isValid) {
       advanceStage();
@@ -111,10 +147,19 @@ export default function AuthGauntlet({ level, taskName, onComplete, onCancel }: 
   // OTP SIMULATION (Stage 1)
   // =========================================================
   const sendOtp = () => {
+    const code = generateOtp();
+    setCurrentOtp(code);
     setOtpSent(true);
     setOtpCountdown(30);
-    // Show the "SMS" hint after a short realistic delay
-    setTimeout(() => setShowOtpHint(true), 1500);
+    
+    // Show the notification toast after a short realistic delay
+    setTimeout(() => setShowOtpHint(true), 1200);
+    
+    // Auto-dismiss the toast after 8 seconds (like a real phone notification)
+    if (otpDismissRef.current) clearTimeout(otpDismissRef.current);
+    otpDismissRef.current = window.setTimeout(() => {
+      setShowOtpHint(false);
+    }, 8000 + 1200); // 1.2s delay + 8s visible
   };
 
   // Countdown timer for OTP resend
@@ -156,8 +201,11 @@ export default function AuthGauntlet({ level, taskName, onComplete, onCancel }: 
     let lastImageData: Uint8ClampedArray | null = null;
     const w = 50;
     const h = 50;
+    let completed = false; // Guard against double-firing
 
     intervalRef.current = window.setInterval(() => {
+      if (completed) return;
+      
       const video = videoRef.current;
       const canvas = canvasRef.current;
       if (video && canvas && video.readyState === 4) {
@@ -175,15 +223,18 @@ export default function AuthGauntlet({ level, taskName, onComplete, onCancel }: 
             if (score > 40) {
               setProgress(prev => {
                 const next = prev + 4;
-                if (next >= 100) {
+                if (next >= 100 && !completed) {
+                  completed = true;
                   stopCamera();
                   setScanStatus('✅ Liveness Verified!');
                   setTimeout(() => advanceStage(), 800);
                   return 100;
                 }
-                return next;
+                return Math.min(next, 100);
               });
-              setScanStatus('Verifying Liveness...');
+              if (!completed) {
+                setScanStatus('Verifying Liveness...');
+              }
             }
           }
           lastImageData = current;
@@ -199,15 +250,18 @@ export default function AuthGauntlet({ level, taskName, onComplete, onCancel }: 
     }
   };
 
-  // Cleanup camera on unmount
+  // Cleanup camera and timers on unmount
   useEffect(() => {
-    return () => stopCamera();
+    return () => {
+      stopCamera();
+      if (otpDismissRef.current) clearTimeout(otpDismissRef.current);
+    };
   }, []);
 
   // =========================================================
-  // FACTOR TYPE LABELS (for the step indicator)
+  // FACTOR TYPE LABELS (for the step indicator UI)
   // =========================================================
-  const factorLabels = ['PIN', 'One-Time Code', 'Face Scan', 'Security Question'];
+  const factorDisplayLabels = ['PIN', 'One-Time Code', 'Face Scan', 'Security Question'];
   const factorCategories = ['Knowledge', 'Possession', 'Biometric', 'Knowledge'];
   const factorIcons = ['🔢', '📱', '👤', '🔐'];
 
@@ -218,10 +272,6 @@ export default function AuthGauntlet({ level, taskName, onComplete, onCancel }: 
   /** Stage 0: PIN entry */
   const renderPinStage = () => (
     <div>
-      <div style={styles.factorBadge}>
-        <span style={styles.factorIcon}>🔢</span>
-        <span>Something you <strong>know</strong></span>
-      </div>
       <label style={styles.label}>Enter your 4-digit PIN</label>
       <input
         type="password"
@@ -237,18 +287,12 @@ export default function AuthGauntlet({ level, taskName, onComplete, onCancel }: 
           borderColor: failMessage ? '#dc3545' : '#ccc',
         }}
       />
-      <p style={styles.hint}>Hint: 1234</p>
     </div>
   );
 
   /** Stage 1: OTP (Possession) */
   const renderOtpStage = () => (
     <div>
-      <div style={styles.factorBadge}>
-        <span style={styles.factorIcon}>📱</span>
-        <span>Something you <strong>have</strong></span>
-      </div>
-
       {!otpSent ? (
         <div>
           <p style={{ color: '#555', marginBottom: '15px', fontSize: '0.95rem' }}>
@@ -260,21 +304,6 @@ export default function AuthGauntlet({ level, taskName, onComplete, onCancel }: 
         </div>
       ) : (
         <div>
-          {/* Simulated SMS notification */}
-          {showOtpHint && (
-            <div style={styles.smsNotification}>
-              <div style={styles.smsHeader}>
-                <span style={styles.smsIcon}>💬</span>
-                <strong>Bank Security</strong>
-                <span style={styles.smsTime}>now</span>
-              </div>
-              <p style={styles.smsBody}>
-                Your verification code is: <strong>{SIMULATED_OTP}</strong>. 
-                Do not share this code. Expires in 5 min.
-              </p>
-            </div>
-          )}
-
           <label style={styles.label}>Enter 6-digit code</label>
           <input
             type="text"
@@ -310,11 +339,6 @@ export default function AuthGauntlet({ level, taskName, onComplete, onCancel }: 
   /** Stage 2: Face scan (Biometric) */
   const renderBiometricStage = () => (
     <div>
-      <div style={styles.factorBadge}>
-        <span style={styles.factorIcon}>👤</span>
-        <span>Something you <strong>are</strong></span>
-      </div>
-
       {!isScanning ? (
         <div>
           <div style={styles.bioPlaceholder}>
@@ -366,10 +390,6 @@ export default function AuthGauntlet({ level, taskName, onComplete, onCancel }: 
   /** Stage 3: Security Question (Second Knowledge) */
   const renderSecurityQuestionStage = () => (
     <div>
-      <div style={styles.factorBadge}>
-        <span style={styles.factorIcon}>🔐</span>
-        <span>Memorable <strong>information</strong></span>
-      </div>
       <label style={styles.label}>What is the name of your first pet?</label>
       <input
         type="text"
@@ -382,7 +402,6 @@ export default function AuthGauntlet({ level, taskName, onComplete, onCancel }: 
           borderColor: failMessage ? '#dc3545' : '#ccc',
         }}
       />
-      <p style={styles.hint}>Hint: Chester</p>
     </div>
   );
 
@@ -399,6 +418,30 @@ export default function AuthGauntlet({ level, taskName, onComplete, onCancel }: 
   // =========================================================
   return (
     <div style={styles.overlay}>
+      {/* OTP TOAST NOTIFICATION — slides down from top of screen */}
+      {showOtpHint && (
+        <div style={styles.toast}>
+          <div style={styles.toastInner}>
+            <div style={styles.toastHeader}>
+              <span style={styles.toastAppIcon}>✉️</span>
+              <span style={styles.toastAppName}>Messages</span>
+              <span style={styles.toastTime}>now</span>
+              <button 
+                onClick={() => setShowOtpHint(false)} 
+                style={styles.toastClose}
+                title="Dismiss"
+              >
+                ✕
+              </button>
+            </div>
+            <div style={styles.toastTitle}>Bank Security</div>
+            <div style={styles.toastBody}>
+              Your verification code is: <strong>{currentOtp}</strong>. Do not share this code with anyone.
+            </div>
+          </div>
+        </div>
+      )}
+
       <div style={styles.modal}>
         {/* Header */}
         <h2 style={{ marginTop: 0, color: '#003366' }}>Security Check</h2>
@@ -428,14 +471,14 @@ export default function AuthGauntlet({ level, taskName, onComplete, onCancel }: 
                   marginTop: '4px',
                 }}
               >
-                {factorLabels[i]}
+                {factorDisplayLabels[i]}
               </span>
             </div>
           ))}
         </div>
 
         <div style={styles.stepIndicator}>
-          Step {stage + 1} of {level} — {factorCategories[stage]} Factor
+          Step {stage + 1} of {level}
         </div>
 
         {/* Active Stage Content */}
@@ -614,6 +657,68 @@ const styles: Record<string, React.CSSProperties> = {
     marginBottom: '10px',
   },
 
+  // --- OTP Toast Notification (top of screen) ---
+  toast: {
+    position: 'fixed',
+    top: '16px',
+    left: '50%',
+    transform: 'translateX(-50%)',
+    zIndex: 10001,
+    width: '100%',
+    maxWidth: '380px',
+    animation: 'slideDown 0.35s ease-out',
+  },
+  toastInner: {
+    background: '#ffffff',
+    borderRadius: '14px',
+    padding: '14px 16px',
+    boxShadow: '0 8px 30px rgba(0,0,0,0.25), 0 0 0 1px rgba(0,0,0,0.05)',
+    fontFamily: 'Segoe UI, sans-serif',
+  },
+  toastHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    marginBottom: '6px',
+    fontSize: '0.78rem',
+    color: '#888',
+  },
+  toastAppIcon: {
+    fontSize: '1rem',
+  },
+  toastAppName: {
+    fontWeight: 'bold',
+    color: '#888',
+    textTransform: 'uppercase',
+    letterSpacing: '0.3px',
+    fontSize: '0.72rem',
+  },
+  toastTime: {
+    marginLeft: 'auto',
+    fontSize: '0.72rem',
+    color: '#aaa',
+  },
+  toastClose: {
+    background: 'none',
+    border: 'none',
+    color: '#bbb',
+    fontSize: '0.9rem',
+    cursor: 'pointer',
+    padding: '0 2px',
+    marginLeft: '4px',
+  },
+  toastTitle: {
+    fontWeight: 'bold',
+    fontSize: '0.92rem',
+    color: '#222',
+    marginBottom: '3px',
+  },
+  toastBody: {
+    fontSize: '0.88rem',
+    color: '#444',
+    lineHeight: '1.35',
+  },
+
   // --- OTP Specific ---
   sendOtpBtn: {
     padding: '14px 20px',
@@ -625,37 +730,6 @@ const styles: Record<string, React.CSSProperties> = {
     cursor: 'pointer',
     fontSize: '1rem',
     fontWeight: 'bold',
-  },
-  smsNotification: {
-    background: '#f0f4f0',
-    border: '1px solid #c5d5c5',
-    borderRadius: '12px',
-    padding: '12px 16px',
-    marginBottom: '16px',
-    textAlign: 'left',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-  },
-  smsHeader: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-    marginBottom: '6px',
-    fontSize: '0.85rem',
-    color: '#333',
-  },
-  smsIcon: {
-    fontSize: '1rem',
-  },
-  smsTime: {
-    marginLeft: 'auto',
-    fontSize: '0.75rem',
-    color: '#999',
-  },
-  smsBody: {
-    margin: 0,
-    fontSize: '0.9rem',
-    color: '#444',
-    lineHeight: '1.4',
   },
   resendText: {
     fontSize: '0.8rem',
