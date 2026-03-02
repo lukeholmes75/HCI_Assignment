@@ -22,30 +22,30 @@ function App() {
 
   const [showModal, setShowModal] = useState(false);
 
-  // Current task tracking
+
   const [level, setLevel] = useState(1);
   const [taskName, setTaskName] = useState('');
   const [lastResult, setLastResult] = useState<AuthResult>({ timeTaken: 0, errors: 0, stageTimes: [] });
 
- 
+
   const [pendingView, setPendingView] = useState<'statement' | 'transfer' | 'address' | 'success'>('success');
   const [hasShownTaskScreen, setHasShownTaskScreen] = useState(false);
 
-  // Study data — persists across all tasks in the session
+
   const [studyRecords, setStudyRecords] = useState<TaskRecord[]>([]);
   const [participantId, setParticipantId] = useState('P01');
   const [finalSurveyData, setFinalSurveyData] = useState<FinalSurveyData | null>(null);
 
-  // User-created credentials from setup screen
+ 
   const [userPin, setUserPin] = useState('');
   const [userPetName, setUserPetName] = useState('');
 
-  // Track which tasks have been completed
   const [completedTasks, setCompletedTasks] = useState<Set<string>>(new Set());
+  const [showExportDismissed, setShowExportDismissed] = useState(false);
 
   const allTasksComplete = completedTasks.size >= 4;
 
-
+ 
 
   const handleAppLogin = (credentials: { pin: string; petName: string }) => {
     setUserPin(credentials.pin);
@@ -60,7 +60,7 @@ function App() {
     setHasShownTaskScreen(false);
   };
 
- 
+  
   const finishAuth = (data: AuthResult) => {
     setShowModal(false);
     setLastResult(data);
@@ -85,7 +85,7 @@ function App() {
     setView('questionnaire');
   };
 
- 
+
   const handleQuestionnaireSubmit = (responses: QuestionnaireData) => {
     const record: TaskRecord = {
       participantId,
@@ -102,12 +102,13 @@ function App() {
     setView('success');
   };
 
- 
+
   const handleFinalSurveySubmit = (data: FinalSurveyData) => {
     setFinalSurveyData(data);
     setView('studycomplete');
   };
 
+  
   const exportFinalSurveyCSV = () => {
     if (!finalSurveyData) return;
     const d = finalSurveyData;
@@ -157,7 +158,6 @@ function App() {
     return '20.00';
   };
 
- 
   return (
     <div>
       {/* SCREEN 1: LOGIN */}
@@ -167,18 +167,6 @@ function App() {
       {view === 'dash' && (
         <>
           <Dashboard onStartTask={startTask} />
-
-          {/* Final Survey prompt — appears when all 4 tasks are done */}
-          {allTasksComplete && !finalSurveyData && (
-            <div style={floatingBannerStyle}>
-              <p style={{ margin: 0 }}>
-                 All tasks complete!
-              </p>
-              <button onClick={() => setView('finalsurvey')} style={finalSurveyBtnStyle}>
-                Take Final Survey →
-              </button>
-            </div>
-          )}
 
           {showModal && (
             <AuthGauntlet
@@ -191,6 +179,27 @@ function App() {
             />
           )}
         </>
+      )}
+
+      {/* POPUP: Appears when all 4 tasks are done — reminds to export + take final survey */}
+      {allTasksComplete && !finalSurveyData && !showExportDismissed && (view === 'dash' || view === 'success') && (
+        <div style={popupOverlayStyle}>
+          <div style={popupCardStyle}>
+            
+            <h2 style={{ margin: '0 0 8px', color: '#003366' }}>All Tasks Complete!</h2>
+            <p style={{ color: '#666', fontSize: '0.93rem', marginBottom: '20px', lineHeight: '1.5' }}>
+              Before continuing, please export the task data using the <strong>Study Logger button in the bottom-right corner</strong>, then take the final survey.
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <button onClick={() => { setShowExportDismissed(true); setView('finalsurvey'); }} style={finalSurveyBtnStyle}>
+                Take Final Survey →
+              </button>
+              <button onClick={() => setShowExportDismissed(true)} style={dismissBtnStyle}>
+                Dismiss
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* SCREEN 3: STATEMENT */}
@@ -242,13 +251,13 @@ function App() {
       {view === 'studycomplete' && (
         <div style={completedContainerStyle}>
           <div style={completedCardStyle}>
-            <div style={{ fontSize: '3rem', marginBottom: '10px' }}>🎉</div>
+            
             <h1 style={{ color: '#28a745', margin: '0 0 10px' }}>Study Complete</h1>
             <p style={{ color: '#666', marginBottom: '25px' }}>
               Thank you for participating. All your responses have been recorded.
             </p>
             <button onClick={exportFinalSurveyCSV} style={exportBtnStyle}>
-              ⬇ Export Final Survey CSV
+              Export Final Survey CSV
             </button>
             <button onClick={() => setView('dash')} style={homeBtnStyle}>
               Return to Dashboard
@@ -270,36 +279,52 @@ function App() {
   );
 }
 
-// Styles for the floating banner and study complete screen
-const floatingBannerStyle: React.CSSProperties = {
+
+const popupOverlayStyle: React.CSSProperties = {
   position: 'fixed',
-  top: '20px',
-  left: '50%',
-  transform: 'translateX(-50%)',
-  zIndex: 9000,
-  background: '#d4edda',
-  border: '1px solid #c3e6cb',
-  borderRadius: '12px',
-  padding: '14px 24px',
+  top: 0,
+  left: 0,
+  width: '100vw',
+  height: '100vh',
+  backgroundColor: 'rgba(0, 0, 0, 0.6)',
   display: 'flex',
+  justifyContent: 'center',
   alignItems: 'center',
-  gap: '16px',
-  boxShadow: '0 4px 15px rgba(0,0,0,0.15)',
+  zIndex: 9500,
+};
+
+const popupCardStyle: React.CSSProperties = {
+  background: 'white',
+  borderRadius: '16px',
+  padding: '35px',
+  maxWidth: '420px',
+  width: '90%',
+  textAlign: 'center',
+  boxShadow: '0 20px 50px rgba(0,0,0,0.3)',
   fontFamily: 'Segoe UI, sans-serif',
-  fontSize: '0.95rem',
-  color: '#155724',
 };
 
 const finalSurveyBtnStyle: React.CSSProperties = {
-  padding: '8px 18px',
+  width: '100%',
+  padding: '14px',
   background: '#28a745',
   color: 'white',
   border: 'none',
   borderRadius: '8px',
-  fontSize: '0.9rem',
+  fontSize: '1rem',
   fontWeight: 'bold',
   cursor: 'pointer',
-  whiteSpace: 'nowrap',
+};
+
+const dismissBtnStyle: React.CSSProperties = {
+  width: '100%',
+  padding: '10px',
+  background: 'none',
+  color: '#666',
+  border: '1px solid #ddd',
+  borderRadius: '8px',
+  fontSize: '0.9rem',
+  cursor: 'pointer',
 };
 
 const completedContainerStyle: React.CSSProperties = {

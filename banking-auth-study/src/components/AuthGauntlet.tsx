@@ -1,14 +1,3 @@
-// src/components/AuthGauntlet.tsx
-//
-// AUTHENTICATION FACTORS (4 distinct types):
-//   Stage 0 — PIN Code          (Knowledge: something you know)
-//   Stage 1 — One-Time Passcode (Possession: something you have — simulated SMS to phone)
-//   Stage 2 — Face Scan         (Biometric: something you are — webcam liveness detection)
-//   Stage 3 — Security Question (Second Knowledge factor — memorable information)
-//
-// The "level" prop controls how many stages are required (1–4).
-// This design ensures each added factor is a DIFFERENT category,
-// which is critical for the HCS study on authentication combinations.
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 
@@ -27,7 +16,7 @@ type Props = {
   onCancel: () => void;
 };
 
-// Generate a random 6-digit OTP
+
 const generateOtp = () => String(Math.floor(100000 + Math.random() * 900000));
 
 export default function AuthGauntlet({ level, taskName, userPin, userPetName, onComplete, onCancel }: Props) {
@@ -59,7 +48,7 @@ export default function AuthGauntlet({ level, taskName, userPin, userPetName, on
   const intervalRef = useRef<number | null>(null);
   const countdownRef = useRef<number | null>(null);
 
-  // Refs to avoid stale closures in setTimeout/setInterval callbacks
+
   const stageRef = useRef(stage);
   const errorsRef = useRef(errors);
   const stageTimesRef = useRef(stageTimes);
@@ -67,14 +56,9 @@ export default function AuthGauntlet({ level, taskName, userPin, userPetName, on
   useEffect(() => { errorsRef.current = errors; }, [errors]);
   useEffect(() => { stageTimesRef.current = stageTimes; }, [stageTimes]);
 
-  // Factor labels for the timing log
+ 
   const factorLabels = ['PIN', 'OTP', 'Face Scan', 'Security Q'];
 
-  // =========================================================
-  // STAGE ADVANCEMENT
-  // Uses refs so it always reads the latest stage/errors,
-  // even when called from a stale setTimeout inside the camera loop.
-  // =========================================================
   const advanceStage = useCallback(() => {
     stopCamera();
     const currentStage = stageRef.current;
@@ -115,9 +99,6 @@ export default function AuthGauntlet({ level, taskName, userPin, userPetName, on
     }
   }, [level, startTime, onComplete]);
 
-  // =========================================================
-  // INPUT HANDLING
-  // =========================================================
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInput(e.target.value);
     if (failMessage) setFailMessage('');
@@ -129,9 +110,9 @@ export default function AuthGauntlet({ level, taskName, userPin, userPetName, on
 
     // Stage 0: PIN — user's chosen PIN
     if (stage === 0 && input === userPin) isValid = true;
-    // Stage 1: OTP — the randomly generated code
+    // Stage 1: OTP 
     else if (stage === 1 && input === currentOtp) isValid = true;
-    // Stage 3: Security Question — user's pet name
+    // Stage 3: Security Question 
     else if (stage === 3 && input.toLowerCase().trim() === userPetName) isValid = true;
 
     if (isValid) {
@@ -143,26 +124,24 @@ export default function AuthGauntlet({ level, taskName, userPin, userPetName, on
     }
   };
 
-  // =========================================================
-  // OTP SIMULATION (Stage 1)
-  // =========================================================
+
   const sendOtp = () => {
     const code = generateOtp();
     setCurrentOtp(code);
     setOtpSent(true);
     setOtpCountdown(30);
     
-    // Show the notification toast after a short realistic delay
+
     setTimeout(() => setShowOtpHint(true), 1200);
     
-    // Auto-dismiss the toast after 8 seconds (like a real phone notification)
+
     if (otpDismissRef.current) clearTimeout(otpDismissRef.current);
     otpDismissRef.current = window.setTimeout(() => {
       setShowOtpHint(false);
-    }, 8000 + 1200); // 1.2s delay + 8s visible
+    }, 8000 + 1200); 
   };
 
-  // Countdown timer for OTP resend
+
   useEffect(() => {
     if (otpCountdown > 0) {
       countdownRef.current = window.setTimeout(() => {
@@ -174,9 +153,7 @@ export default function AuthGauntlet({ level, taskName, userPin, userPetName, on
     };
   }, [otpCountdown]);
 
-  // =========================================================
-  // CAMERA / BIOMETRIC LOGIC (Stage 2)
-  // =========================================================
+
   const startFaceScan = async () => {
     setIsScanning(true);
     setScanStatus('Accessing Camera...');
@@ -201,7 +178,7 @@ export default function AuthGauntlet({ level, taskName, userPin, userPetName, on
     let lastImageData: Uint8ClampedArray | null = null;
     const w = 50;
     const h = 50;
-    let completed = false; // Guard against double-firing
+    let completed = false; 
 
     intervalRef.current = window.setInterval(() => {
       if (completed) return;
@@ -226,7 +203,7 @@ export default function AuthGauntlet({ level, taskName, userPin, userPetName, on
                 if (next >= 100 && !completed) {
                   completed = true;
                   stopCamera();
-                  setScanStatus('✅ Liveness Verified!');
+                  setScanStatus('Liveness Verified');
                   setTimeout(() => advanceStage(), 800);
                   return 100;
                 }
@@ -258,16 +235,12 @@ export default function AuthGauntlet({ level, taskName, userPin, userPetName, on
     };
   }, []);
 
-  // =========================================================
-  // FACTOR TYPE LABELS (for the step indicator UI)
-  // =========================================================
+
   const factorDisplayLabels = ['PIN', 'One-Time Code', 'Face Scan', 'Security Question'];
   const factorCategories = ['Knowledge', 'Possession', 'Biometric', 'Knowledge'];
-  const factorIcons = ['🔢', '📱', '👤', '🔐'];
+  const factorIcons = ['1', '2', '3', '4'];
 
-  // =========================================================
-  // RENDER HELPERS
-  // =========================================================
+
 
   /** Stage 0: PIN entry */
   const renderPinStage = () => (
@@ -342,7 +315,7 @@ export default function AuthGauntlet({ level, taskName, userPin, userPetName, on
       {!isScanning ? (
         <div>
           <div style={styles.bioPlaceholder}>
-            <div style={styles.bioIconLarge}>👤</div>
+            <div style={styles.bioIconLarge}>Face ID</div>
             <p style={{ color: '#666', margin: '10px 0 0' }}>
               Position your face in the camera frame
             </p>
@@ -405,17 +378,15 @@ export default function AuthGauntlet({ level, taskName, userPin, userPetName, on
     </div>
   );
 
-  // Map stage index → renderer
+
   const stageRenderers = [renderPinStage, renderOtpStage, renderBiometricStage, renderSecurityQuestionStage];
 
-  // Whether the current stage uses a text-submit form (stages 0, 1, 3) vs camera (stage 2)
+ 
   const isFormStage = stage !== 2;
-  // For the OTP stage, only show submit button once OTP has been sent
+
   const showSubmitButton = isFormStage && !(stage === 1 && !otpSent);
 
-  // =========================================================
-  // MAIN RENDER
-  // =========================================================
+
   return (
     <div style={styles.overlay}>
       {/* OTP TOAST NOTIFICATION — slides down from top of screen */}
@@ -423,7 +394,7 @@ export default function AuthGauntlet({ level, taskName, userPin, userPetName, on
         <div style={styles.toast}>
           <div style={styles.toastInner}>
             <div style={styles.toastHeader}>
-              <span style={styles.toastAppIcon}>✉️</span>
+              <span style={styles.toastAppIcon}>SMS</span>
               <span style={styles.toastAppName}>Messages</span>
               <span style={styles.toastTime}>now</span>
               <button 
@@ -431,7 +402,7 @@ export default function AuthGauntlet({ level, taskName, userPin, userPetName, on
                 style={styles.toastClose}
                 title="Dismiss"
               >
-                ✕
+                X
               </button>
             </div>
             <div style={styles.toastTitle}>Bank Security</div>
@@ -461,7 +432,7 @@ export default function AuthGauntlet({ level, taskName, userPin, userPetName, on
                   border: i === stage ? '2px solid #003366' : '2px solid transparent',
                 }}
               >
-                {i < stage ? '✓' : factorIcons[i]}
+                {i < stage ? '✓' : i + 1}
               </div>
               <span
                 style={{
@@ -491,7 +462,7 @@ export default function AuthGauntlet({ level, taskName, userPin, userPetName, on
 
             {/* Error message */}
             {failMessage && (
-              <div style={styles.errorMsg}>⚠️ {failMessage}</div>
+              <div style={styles.errorMsg}>{failMessage}</div>
             )}
 
             {/* Submit button (not shown for biometric or pre-OTP) */}
@@ -517,9 +488,7 @@ export default function AuthGauntlet({ level, taskName, userPin, userPetName, on
   );
 }
 
-// =========================================================
-// STYLES
-// =========================================================
+
 const styles: Record<string, React.CSSProperties> = {
   overlay: {
     position: 'fixed',

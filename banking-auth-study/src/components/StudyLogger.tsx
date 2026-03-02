@@ -102,7 +102,7 @@ export default function StudyLogger({ records, participantId, onSetParticipantId
         style={styles.floatingBtn}
         title="Study Data Logger"
       >
-        📊 {records.length > 0 && <span style={styles.badge}>{records.length}</span>}
+        Study Data {records.length > 0 && <span style={styles.badge}>{records.length}</span>}
       </button>
     );
   }
@@ -111,8 +111,8 @@ export default function StudyLogger({ records, participantId, onSetParticipantId
     <div style={styles.panel}>
       {/* Header */}
       <div style={styles.panelHeader}>
-        <h3 style={{ margin: 0, fontSize: '1rem', color: '#003366' }}>📊 Study Logger</h3>
-        <button onClick={() => setIsExpanded(false)} style={styles.closeBtn}>✕</button>
+        <h3 style={{ margin: 0, fontSize: '1rem', color: '#003366' }}>Study Logger</h3>
+        <button onClick={() => setIsExpanded(false)} style={styles.closeBtn}>X</button>
       </div>
 
       {/* Participant ID */}
@@ -184,7 +184,7 @@ export default function StudyLogger({ records, participantId, onSetParticipantId
             cursor: records.length === 0 ? 'not-allowed' : 'pointer',
           }}
         >
-          ⬇ Export CSV
+          Export CSV
         </button>
         <button
           onClick={() => {
@@ -206,9 +206,7 @@ export default function StudyLogger({ records, participantId, onSetParticipantId
   );
 }
 
-// =========================================================
-// STYLES
-// =========================================================
+
 const styles: Record<string, React.CSSProperties> = {
   floatingBtn: {
     position: 'fixed',

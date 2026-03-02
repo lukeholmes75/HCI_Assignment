@@ -1,9 +1,3 @@
-// src/components/Questionnaire.tsx
-//
-// POST-TASK QUESTIONNAIRE (shown after each authentication level)
-// 9 questions on a 5-point Likert scale matching the group study design.
-// Section A: Usability Metrics (Q1–Q5)
-// Section B: Security Perception Metrics (Q6–Q9)
 
 import React, { useState } from 'react';
 
@@ -180,7 +174,7 @@ export default function Questionnaire({ taskName, level, onSubmit }: Props) {
 
         {showWarning && (
           <div style={styles.warning}>
-            ⚠️ Please answer all questions before submitting.
+            Please answer all questions before submitting.
           </div>
         )}
 

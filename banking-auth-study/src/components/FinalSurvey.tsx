@@ -91,9 +91,7 @@ export default function FinalSurvey({ onSubmit }: Props) {
           </p>
         </div>
 
-        {/* ============================================ */}
-        {/* SECTION 3: Cross-Test Comparison */}
-        {/* ============================================ */}
+
         <div style={styles.sectionHeader}>Section 3 — Cross-Test Comparison</div>
 
         {/* Q10 */}
@@ -250,9 +248,7 @@ export default function FinalSurvey({ onSubmit }: Props) {
           </div>
         </div>
 
-        {/* ============================================ */}
-        {/* SECTION 4: Qualitative Questions */}
-        {/* ============================================ */}
+
         <div style={{ ...styles.sectionHeader, marginTop: '20px' }}>Section 4 — Qualitative Questions</div>
 
         {/* Q16 */}
@@ -328,7 +324,7 @@ export default function FinalSurvey({ onSubmit }: Props) {
         {/* Warning */}
         {showWarning && (
           <div style={styles.warning}>
-            ⚠️ Please answer all required questions (Q10–Q17) before submitting.
+            Please answer all required questions (Q10-Q17) before submitting.
           </div>
         )}
 

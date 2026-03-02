@@ -69,7 +69,7 @@ export default function Login({ onLogin }: Props) {
           </div>
 
           {setupError && (
-            <div style={errorStyle}>⚠️ {setupError}</div>
+            <div style={errorStyle}>{setupError}</div>
           )}
 
           <button type="submit" style={buttonStyle}>

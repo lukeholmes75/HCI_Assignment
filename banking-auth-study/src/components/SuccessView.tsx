@@ -15,7 +15,8 @@ export default function SuccessView({ taskName, stats, onHome }: Props) {
   return (
     <div style={styles.container}>
       <div style={styles.card}>
-        
+        {/* BIG GREEN CHECKMARK ICON */}
+        <div style={styles.icon}>Success</div>
         
         <h1 style={{ color: '#28a745', marginBottom: '10px', marginTop: 0 }}>Success!</h1>
         <p style={{ fontSize: '1.1rem', color: '#555', marginBottom: '30px' }}>
