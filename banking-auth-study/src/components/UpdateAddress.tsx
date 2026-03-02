@@ -7,7 +7,7 @@ type Props = {
 };
 
 export default function UpdateAddress({ onBack, onConfirm }: Props) {
-  // Pre-fill some data so the user doesn't have to type too much
+
   const [street, setStreet] = useState('');
   const [postcode, setPostcode] = useState('');
 

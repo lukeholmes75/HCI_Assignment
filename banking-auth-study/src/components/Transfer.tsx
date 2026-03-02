@@ -4,11 +4,11 @@ import React from 'react';
 type Props = {
   onBack: () => void;
   onConfirm: () => void;
-  initialAmount?: string; // NEW: Accepts an amount from the parent
+  initialAmount?: string;
 };
 
 export default function Transfer({ onBack, onConfirm, initialAmount = "20.00" }: Props) {
-  // Use the prop if provided, otherwise default to 20.00
+  
   const amount = initialAmount;
   const payee = amount === "10,000.00" ? "Investment Account" : "Alice Smith";
 

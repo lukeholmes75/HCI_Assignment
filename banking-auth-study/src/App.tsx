@@ -15,10 +15,7 @@ import StudyLogger from './components/StudyLogger';
 import type { TaskRecord } from './components/StudyLogger';
 
 function App() {
-  // =========================================================
-  // 1. STATE MANAGEMENT
-  // =========================================================
-  
+
   const [view, setView] = useState<
     'login' | 'dash' | 'statement' | 'transfer' | 'address' | 'questionnaire' | 'success' | 'finalsurvey' | 'studycomplete'
   >('login');
@@ -30,7 +27,7 @@ function App() {
   const [taskName, setTaskName] = useState('');
   const [lastResult, setLastResult] = useState<AuthResult>({ timeTaken: 0, errors: 0, stageTimes: [] });
 
-  // Tracks which view the questionnaire should go to after submit
+ 
   const [pendingView, setPendingView] = useState<'statement' | 'transfer' | 'address' | 'success'>('success');
   const [hasShownTaskScreen, setHasShownTaskScreen] = useState(false);
 
@@ -48,9 +45,7 @@ function App() {
 
   const allTasksComplete = completedTasks.size >= 4;
 
-  // =========================================================
-  // 2. HANDLERS
-  // =========================================================
+
 
   const handleAppLogin = (credentials: { pin: string; petName: string }) => {
     setUserPin(credentials.pin);
@@ -65,7 +60,7 @@ function App() {
     setHasShownTaskScreen(false);
   };
 
-  // After the AuthGauntlet completes → route to the task screen first
+ 
   const finishAuth = (data: AuthResult) => {
     setShowModal(false);
     setLastResult(data);
@@ -85,12 +80,12 @@ function App() {
     }
   };
 
-  // After the user completes the task screen → questionnaire
+
   const completeSubTask = () => {
     setView('questionnaire');
   };
 
-  // After the per-task questionnaire → save data + show success
+ 
   const handleQuestionnaireSubmit = (responses: QuestionnaireData) => {
     const record: TaskRecord = {
       participantId,
@@ -107,13 +102,12 @@ function App() {
     setView('success');
   };
 
-  // After the final survey → export everything
+ 
   const handleFinalSurveySubmit = (data: FinalSurveyData) => {
     setFinalSurveyData(data);
     setView('studycomplete');
   };
 
-  // Export final survey as separate CSV
   const exportFinalSurveyCSV = () => {
     if (!finalSurveyData) return;
     const d = finalSurveyData;
@@ -155,7 +149,7 @@ function App() {
     URL.revokeObjectURL(url);
   };
 
-  // Helper: Transfer amount based on task
+
   const getTransferAmount = () => {
     if (taskName.includes('Large') || taskName.includes('10k')) {
       return '10,000.00';
@@ -163,9 +157,7 @@ function App() {
     return '20.00';
   };
 
-  // =========================================================
-  // 3. RENDER
-  // =========================================================
+ 
   return (
     <div>
       {/* SCREEN 1: LOGIN */}
@@ -180,7 +172,7 @@ function App() {
           {allTasksComplete && !finalSurveyData && (
             <div style={floatingBannerStyle}>
               <p style={{ margin: 0 }}>
-                ✅ All tasks complete!
+                 All tasks complete!
               </p>
               <button onClick={() => setView('finalsurvey')} style={finalSurveyBtnStyle}>
                 Take Final Survey →
